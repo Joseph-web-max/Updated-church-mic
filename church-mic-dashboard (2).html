@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Church Microphone Dashboard</title>
+<style>
+:root{--bg:#f4f1ea;--card:#fff;--ink:#1d1b16;--mute:#6b665a;--line:#ddd7c8;--accent:#1f5f4a;--accent-ink:#fff;--danger:#b3261e;--warn:#9a6b00;--ok:#1f7a4d;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14130f;--card:#1f1d17;--ink:#f1ede2;--mute:#a39e8f;--line:#38352b;--accent:#4fb590;--accent-ink:#06201a;--danger:#ff6b60;--warn:#e0b04a;--ok:#5fd596}}
+:root[data-theme="dark"]{--bg:#14130f;--card:#1f1d17;--ink:#f1ede2;--mute:#a39e8f;--line:#38352b;--accent:#4fb590;--accent-ink:#06201a;--danger:#ff6b60;--warn:#e0b04a;--ok:#5fd596}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:960px;margin:0 auto;padding:20px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+h1{font-size:1.5rem;margin:0}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;border:2px solid var(--line);font-weight:700;background:var(--card)}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--mute)}
+.pill.live{border-color:var(--ok);color:var(--ok)}.pill.live .dot{background:var(--ok);animation:p 1s infinite}
+.pill.muted{border-color:var(--danger);color:var(--danger)}.pill.muted .dot{background:var(--danger)}
+@keyframes p{50%{opacity:.3}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.grid{grid-template-columns:1fr}}
+label{display:block;font-size:.85rem;font-weight:600;color:var(--mute);margin-bottom:6px}
+select{width:100%;padding:12px;font-size:1rem;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.btn{font:inherit;font-weight:800;font-size:1.25rem;min-height:84px;border-radius:16px;border:none;cursor:pointer;padding:12px;width:100%;background:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.alt{background:var(--card);color:var(--ink);border:3px solid var(--accent)}
+.btn.stop{background:var(--danger);color:#fff}
+.btn.mute{background:var(--danger);color:#fff;min-height:110px;font-size:1.6rem}
+.btn.mute.on{background:var(--card);color:var(--danger);border:4px solid var(--danger)}
+.btn small{display:block;font-weight:500;font-size:.8rem;opacity:.85;margin-top:2px}
+.btn:focus-visible,select:focus-visible,input:focus-visible{outline:4px solid var(--warn);outline-offset:2px}
+.meter{height:26px;border-radius:13px;background:var(--bg);border:1px solid var(--line);overflow:hidden}
+.bar{height:100%;width:0;background:linear-gradient(90deg,var(--ok) 0 70%,var(--warn) 70% 90%,var(--danger) 90%);transition:width 60ms}
+input[type=range]{width:100%;height:44px;accent-color:var(--accent)}
+.vol{display:flex;align-items:center;gap:14px}.vol b{font-size:2rem;min-width:90px;text-align:right}
+.msg{font-size:.95rem;color:var(--mute);min-height:1.4em}.msg.err{color:var(--danger);font-weight:600}
+.warn{border-left:6px solid var(--warn);padding:10px 14px;background:var(--bg);border-radius:8px;font-size:.92rem}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.rec{font-variant-numeric:tabular-nums;font-weight:700}
+a.dl{display:inline-block;margin-top:8px;font-weight:700;color:var(--accent)}
+.fbwarn{border:3px solid var(--danger);background:var(--card);color:var(--danger);border-radius:14px;padding:14px 18px;margin-bottom:16px;font-size:1.05rem}
+.fbwarn[hidden]{display:none}
+.btn.alt.sel{background:var(--accent);color:var(--accent-ink)}
+.guide summary{font-size:1.15rem;font-weight:800;cursor:pointer;padding:4px 0}
+.guide h3{font-size:1rem;margin:16px 0 6px;color:var(--accent)}
+.guide ol,.guide ul{margin:0;padding-left:22px}.guide li{margin:5px 0}
+.guide .tip{background:var(--bg);border-radius:10px;padding:10px 14px;margin-top:12px;font-size:.92rem}
+.btn .ic{display:block;font-size:2.4rem;line-height:1.1;margin-bottom:2px}
+.flow{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap}
+.fnode{flex:1 1 130px;min-width:120px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 8px;border-radius:14px;border:3px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;text-align:center}
+button.fnode{cursor:pointer}
+.fnode .ic{font-size:2.2rem;line-height:1.1}.fnode b{font-size:1rem}
+.fnode .fs{font-size:.78rem;color:var(--mute);word-break:break-word}
+.fnode.ready{border-color:var(--warn)}.fnode.on{border-color:var(--ok);background:var(--card)}
+.fnode.on .fs{color:var(--ok);font-weight:700}
+.fnode.mute{border-color:var(--danger)}.fnode.mute .fs{color:var(--danger);font-weight:700}
+.fnode:focus-visible{outline:4px solid var(--warn);outline-offset:2px}
+.arrow{align-self:center;font-size:1.6rem;color:var(--mute)}
+.flow.live .arrow{color:var(--ok);animation:p 1s infinite}
+.lock{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+.lock[hidden]{display:none}
+.lockbox{width:min(420px,100%);text-align:center;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px}
+.lockbox h2{margin:6px 0}
+.lockbox input{width:100%;font-size:1.6rem;text-align:center;letter-spacing:.4em;padding:12px;margin:8px 0;border-radius:10px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
+.lockbox .btn{margin-top:8px}
+body.big{font-size:22px}body.big .wrap{max-width:1400px}body.big h1{font-size:2.4rem}body.big .pill{font-size:1.4rem}body.big .btn{font-size:2rem;min-height:140px}body.big .btn.mute{font-size:2.6rem;min-height:180px}body.big .btn small{font-size:1rem}body.big .vol b{font-size:3rem}body.big .meter{height:44px}body.big select{font-size:1.2rem}body.big .msg{font-size:1.2rem}
+.tiny{font-size:.82rem;color:var(--mute)}
+</style>
+</head>
+<body>
+<div class="lock" id="lock" hidden><div class="lockbox">
+<div style="font-size:3rem">🔒</div><h2 id="lockTitle">Dashboard locked</h2><p id="lockSub" class="tiny"></p>
+<input id="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="PIN" aria-label="PIN">
+<input id="pin2" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="Repeat PIN" aria-label="Repeat PIN" hidden>
+<button id="pinBtn" class="btn" type="button" style="min-height:64px">Unlock</button>
+<button id="pinSkip" class="btn alt" type="button" style="min-height:48px;font-size:1rem" hidden>Skip for now (not recommended)</button>
+<p id="pinMsg" class="msg err" role="alert"></p>
+<button id="lockMute" class="btn mute" type="button" hidden>🔇 EMERGENCY MUTE</button>
+</div></div>
+<div class="wrap">
+<header>
+  <h1>⛪ Church Microphone Dashboard</h1>
+  <div class="row">
+    <button id="btnLock" type="button" class="pill" style="cursor:pointer;font:inherit;font-weight:700;color:var(--ink)">🔒 Lock</button><button id="btnBig" type="button" class="pill" style="cursor:pointer;font:inherit;font-weight:700;color:var(--ink)">🖥 Big screen</button><button id="micPill" type="button" class="pill" style="cursor:pointer;font:inherit;font-weight:700;color:var(--ink)"><span class="dot"></span><span id="micTxt">Mic OFF</span></button>
+    <button id="airPill" type="button" class="pill" style="cursor:pointer;font:inherit;font-weight:700;color:var(--ink)"><span class="dot"></span><span id="airTxt">OFF AIR</span></button>
+  </div>
+</header>
+<div id="fb" class="fbwarn" role="alert" hidden></div>
+<div id="gd" class="fbwarn" role="alert" hidden></div>
+<div class="card"><div id="flow" class="flow">
+<button type="button" id="fn_mic" class="fnode" title="Click to turn the microphone on or off"><span class="ic">🎤</span><b>Microphone</b><span id="fs_mic" class="fs">Not connected</span></button>
+<span class="arrow">➜</span>
+<div id="fn_lap" class="fnode"><span class="ic">💻</span><b>Laptop</b><span id="fs_lap" class="fs">Idle</span></div>
+<span class="arrow">➜</span>
+<button type="button" id="fn_out" class="fnode" title="Click to choose the output"><span class="ic">🔌</span><b>Output</b><span id="fs_out" class="fs">Default</span></button>
+<span class="arrow">➜</span>
+<button type="button" id="fn_spk" class="fnode" title="Click to play a test tone"><span class="ic">🔊</span><b>Speakers</b><span id="fs_spk" class="fs">Silent</span></button>
+</div></div>
+<div class="card"><button id="btnDoc" type="button" class="btn alt" style="min-height:64px"><span class="ic">🩺</span>No sound from the speakers? Check and fix it<small>Tests every step and repairs what it can</small></button><ul id="docOut" style="list-style:none;margin:10px 0 0;padding:0"></ul></div>
+<div class="card"><label>Where is the sound going?</label>
+<div class="grid"><button id="modeLap" class="btn alt" type="button"><span class="ic">💻</span>Laptop Speakers<small>No amplifier connected</small></button><button id="modeAmp" class="btn alt" type="button"><span class="ic">🔌</span>Amplifier<small>Cable in AUX / LINE IN</small></button><button id="modeUsb" class="btn alt" type="button" style="grid-column:1/-1"><span class="ic">🔗</span>USB Hub / Wireless Receiver<small>USB sound card or hub to the amplifier, receiver plugged in</small></button></div>
+<p id="modeTxt" class="tiny" style="margin:10px 0 0">Choose one before you start. Your choice is remembered.</p></div>
+<div class="card"><label>Wireless receiver or two microphones</label>
+<div class="grid">
+<div><label for="in2Sel">Microphone 2 (optional)</label><select id="in2Sel"><option value="">None (one microphone)</option></select></div>
+<div><label style="display:flex;gap:8px;align-items:center;margin-top:24px"><input id="splitChk" type="checkbox" style="width:22px;height:22px;flex:none"> Receiver gives 2 microphones on one stereo input (left = Mic 1, right = Mic 2)</label></div>
+</div>
+<div class="grid" style="margin-top:14px">
+<div><label>Microphone 1 volume <span id="v1Txt">100%</span></label><input id="v1" type="range" min="0" max="150" value="100"><div class="meter" style="height:16px"><div id="bar1" class="bar"></div></div><button id="m1" type="button" class="btn alt" style="min-height:48px;font-size:1rem;margin-top:8px">Mute Mic 1</button></div>
+<div><label>Microphone 2 volume <span id="v2Txt">100%</span></label><input id="v2" type="range" min="0" max="150" value="100"><div class="meter" style="height:16px"><div id="bar2" class="bar"></div></div><button id="m2" type="button" class="btn alt" style="min-height:48px;font-size:1rem;margin-top:8px">Mute Mic 2</button></div>
+</div></div>
+
+<div class="card">
+  <div class="grid">
+    <div><label for="inSel">Microphone 1 (input)</label><select id="inSel"><option value="">Click Activate Microphone first</option></select></div>
+    <div><label for="outSel">Speakers (laptop or amplifier)</label><select id="outSel"><option value="">Default output (laptop speakers or headphones)</option></select><button id="btnTest" type="button" class="btn alt" style="min-height:48px;font-size:1rem;margin-top:8px">🔊 Test speakers</button></div>
+  </div>
+  <p id="msg" class="msg" role="status"></p>
+</div>
+
+<div class="card">
+  <div class="grid">
+    <button id="btnMic" class="btn alt">1. Activate Microphone<small>Allow microphone access</small></button>
+    <button id="btnAir" class="btn" disabled>2. Start Preaching<small>Send voice to the speakers</small></button>
+  </div>
+</div>
+
+<div class="card">
+  <button id="btnMute" class="btn mute" disabled>🔇 EMERGENCY MUTE<small>Shortcut: press M or Esc</small></button>
+</div>
+
+<div class="card">
+  <label for="vol">Speaker volume</label>
+  <div class="vol"><input id="vol" type="range" min="0" max="150" value="80"><b id="volTxt">80%</b></div>
+  <label style="margin-top:14px">Microphone level</label>
+  <div class="meter"><div id="bar" class="bar"></div></div>
+  <div class="row" style="margin-top:14px">
+    <label style="margin:0;display:flex;gap:8px;align-items:center"><input id="nsChk" type="checkbox" checked style="width:22px;height:22px"> Noise reduction</label>
+    <label style="margin:0;display:flex;gap:8px;align-items:center"><input id="fbChk" type="checkbox" checked style="width:22px;height:22px"> Feedback guard (auto-lowers volume)</label>
+  </div>
+</div>
+
+<div class="card">
+  <div class="grid">
+    <button id="btnRec" class="btn alt" disabled>⏺ Record Sermon<small>Saves a file you can download</small></button>
+    <div><div class="rec" id="recTime">Not recording</div><div id="dlBox"></div></div>
+  </div>
+</div>
+
+<div class="card" id="batt"><label>🔋 Microphone battery</label>
+<div class="grid">
+<div id="battS" class="fnode"><span class="ic">🔋</span><b id="battT">Battery</b><span id="battX" class="fs">Checking…</span></div>
+<div>
+<label style="display:flex;gap:8px;align-items:center;margin:0 0 10px"><input id="chgChk" type="checkbox" style="width:22px;height:22px;flex:none"> The microphone is charging while in use (charger or USB cable connected)</label>
+<label for="runH">Full battery lasts (hours)</label><input id="runH" type="number" min="1" max="100" step="0.5" value="8" style="width:100%;padding:10px;font-size:1rem;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)">
+<div class="grid" style="margin-top:10px"><button id="btnBFull" type="button" class="btn alt" style="min-height:48px;font-size:1rem">✔ Battery is full now</button><button id="btnBle" type="button" class="btn alt" style="min-height:48px;font-size:1rem">📲 Read battery by Bluetooth</button></div>
+</div></div></div>
+<div class="card" id="guard"><label>🛡 System Guardian: watches for power and device problems</label>
+<div class="flow">
+<div id="fg_pow" class="fnode"><span class="ic">🔋</span><b>Power</b><span id="fgt_pow" class="fs">Checking…</span></div>
+<div id="fg_mic" class="fnode"><span class="ic">🎤</span><b>Microphone</b><span id="fgt_mic" class="fs">Off</span></div>
+<div id="fg_out" class="fnode"><span class="ic">🔊</span><b>Output</b><span id="fgt_out" class="fs">Idle</span></div>
+<div id="fg_sig" class="fnode"><span class="ic">📶</span><b>Sound signal</b><span id="fgt_sig" class="fs">Waiting</span></div>
+</div>
+<div class="row" style="margin-top:12px">
+<label style="margin:0;display:flex;gap:8px;align-items:center"><input id="gdChk" type="checkbox" checked style="width:22px;height:22px"> Guardian on</label>
+<select id="gdPower" style="width:auto;flex:1 1 260px"><option value="now" selected>If mains power fails: disconnect safely now</option><option value="low">If mains power fails: disconnect when battery is below 15%</option><option value="warn">If mains power fails: warn only</option></select>
+<button id="gTest" type="button" class="btn alt" style="min-height:48px;font-size:1rem;width:auto;padding:8px 16px">Test safe disconnect</button>
+</div>
+<ul id="gLog" class="tiny" style="margin:10px 0 0;padding-left:18px"></ul>
+</div>
+<details class="card guide" open>
+<summary>📖 How to use this dashboard</summary>
+<h3>A. Using the laptop speakers (no amplifier)</h3>
+<ol>
+<li>Click <b>💻 Laptop Speakers</b>. The volume is limited to 60% for safety.</li>
+<li>Click <b>🎤 Turn Mic ON</b> and choose <b>Allow</b> when the browser asks for the microphone.</li>
+<li>In <b>Microphone</b>, choose your microphone. In <b>Speakers</b>, check it says Speakers (Realtek(R) Audio).</li>
+<li>Press <b>🔊 Test speakers</b>. If you hear the tone, the output works.</li>
+<li>Speak and watch the <b>Microphone level</b> bar move. Keep it mostly in the green.</li>
+<li>Click <b>📡 Go ON AIR</b> to send your voice to the speakers.</li>
+</ol>
+<h3>B. Using the church amplifier</h3>
+<ol>
+<li>Plug the laptop’s headphone jack into the amplifier’s <b>AUX / LINE IN</b> with an audio cable. Turn the amplifier volume down first.</li>
+<li>Click <b>🔌 Amplifier</b>, then <b>🎤 Turn Mic ON</b>.</li>
+<li>In <b>Speakers</b>, choose the headphone or line-out output, then press <b>Test speakers</b> and raise the amplifier volume slowly.</li>
+<li>Click <b>📡 Go ON AIR</b> and set the loudness with the <b>Speaker volume</b> slider.</li>
+</ol>
+<h3>C. USB hub and wireless microphone receiver</h3>
+<ol>
+<li>Plug the wireless receiver into the laptop with its USB cable, or through a powered USB hub. Switch the receiver and the microphones on.</li>
+<li>Click <b>🔗 USB Hub / Wireless Receiver</b>, then <b>🎤 Turn Mic ON</b>.</li>
+<li>In <b>Microphone 1</b>, choose the receiver. It often shows as “USB Audio Device”.</li>
+<li>Two microphones on one receiver: if the receiver shows as one input, tick <b>Receiver gives 2 microphones on one stereo input</b>. If it shows as two inputs, choose the second one in <b>Microphone 2</b>.</li>
+<li>Use the Mic 1 and Mic 2 sliders to balance the two voices, and the Mute buttons to silence one of them.</li>
+<li>Send the sound to the amplifier through a USB sound card, or a hub with a headphone or line-out jack, plugged into AUX / LINE IN. Choose that device in <b>Speakers</b>.</li>
+</ol>
+<div class="tip"><b>About batteries:</b> the wireless microphones still need their own batteries (rechargeable ones work well), because the software cannot power them. The receiver and the laptop can run from mains power through the hub, and keeping the laptop plugged in saves its battery. A plain USB hub only adds ports and does not carry sound, so you need a USB sound card or a hub with audio built in. If your receiver only has XLR or 6.35 mm outputs and no USB, put a small USB audio interface between the receiver and the laptop.</div>
+<h3>The picture strip at the top</h3>
+<ul><li>🎤 ➜ 💻 ➜ 🔌 ➜ 🔊 shows the path of your voice. <b>Green</b> means that step is connected or working, <b>orange</b> means ready, and <b>red</b> means muted. The arrows move while you are live.</li>
+<li>Click the pictures: 🎤 turns the microphone on or off, 🔌 jumps to the output list, and 🔊 plays a test tone.</li></ul>
+<h3>Microphone battery</h3>
+<ul><li>Tick <b>The microphone is charging while in use</b> when the microphone has its charger or USB cable connected. The dashboard then shows “charging while in use” and stops counting down.</li>
+<li>Without a charger, it estimates the time left from the hours you enter and the time you have been ON AIR. Press <b>Battery is full now</b> after charging or changing the battery.</li>
+<li><b>Read battery by Bluetooth</b> shows the real battery level if the microphone shares it. Many do not, and then the hours estimate is used.</li>
+<li>You get a warning at about 20% and a stronger one at about 10%. These are estimates, so keep spare batteries ready.</li></ul>
+<h3>System Guardian (automatic safety)</h3>
+<ul><li>The Guardian watches four things: the laptop’s power, the microphone, the selected output, and whether sound is arriving.</li>
+<li>If the charger is unplugged or mains power fails, the microphone is lost (for example the receiver loses power), the selected speaker or amplifier output is unplugged, or the battery gets critically low, it fades the sound out in a quarter of a second and disconnects. The fade prevents a loud pop in the speakers.</li>
+<li>Only this dashboard’s own audio connections are closed. Windows settings, the laptop, a phone and every other device are left alone and keep working.</li>
+<li>It never reconnects by itself. When the problem is fixed, press <b>Turn Mic ON</b> and <b>Go ON AIR</b>. The sound then fades in gently.</li>
+<li>The power setting lets you choose: disconnect at once, disconnect when the battery is below 15%, or warn only. Use <b>Test safe disconnect</b> to see what happens before a service.</li>
+<li>If no sound comes from the microphone for 10 seconds while you are ON AIR, a warning appears. Check the microphone’s battery and the receiver.</li>
+<li><b>Limits:</b> a web page cannot see the amplifier’s own mains supply. It works from the laptop’s power, device unplugging and missing sound. For real protection from power cuts and surges, plug the amplifier and receiver into a surge protector or a UPS. Power status works in Chrome and Edge only.</li></ul>
+<h3>Security</h3>
+<ul><li>The dashboard asks for a PIN when it opens and after 10 minutes without use (never while you are ON AIR). Create a 4 to 8 digit PIN the first time.</li>
+<li>Click 🔒 Lock to lock it at any time. If it is locked while ON AIR, the Emergency Mute button stays on the lock screen.</li>
+<li>Five wrong PINs lock it for 30 seconds.</li>
+<li>Everything stays on this laptop. Nothing is sent over the internet, and a recording is only saved when you download it.</li>
+<li>If the PIN is forgotten, clear this site’s data in the browser settings, which also removes the saved settings. The PIN keeps casual users out but does not stop someone who can clear the browser data, so also protect the laptop with a Windows password.</li></ul>
+<h3>During the service</h3>
+<ul>
+<li><b>EMERGENCY MUTE</b> (or press <b>M</b> or <b>Esc</b>) silences the speakers instantly. Press it again to unmute.</li>
+<li><b>📡 Go OFF AIR</b> stops sending your voice. <b>🎤 Turn Mic OFF</b> releases the microphone completely.</li>
+<li><b>⏺ Record Sermon</b> starts recording. Press it again to stop, then click the download link that appears.</li>
+<li>Keep the page open and the laptop plugged in. Do not close the browser tab while preaching.</li>
+</ul>
+<h3>If something is wrong</h3>
+<ul>
+<li><b>Level bar moves but no sound:</b> check the pill at the top says ON AIR, not MUTED. Press Test speakers, then check the Speakers list and the volume slider.</li>
+<li><b>Level bar does not move:</b> choose another microphone in the list, and check the microphone is on, charged and paired in Windows.</li>
+<li><b>Screeching (feedback):</b> lower the volume, move the microphone away from the speakers, or press Emergency Mute. The Feedback guard also lowers the volume by itself.</li>
+<li><b>Voice sounds thin or delayed:</b> this is common with Bluetooth microphones. A wired or USB microphone sounds better.</li>
+<li><b>Microphone blocked:</b> click the padlock next to the page address, allow the microphone, and reload the page.</li>
+</ul>
+<div class="tip"><b>Before every service:</b> arrive early, do a short test with someone listening at the back, and use Chrome or Edge.</div>
+</details>
+<div class="warn"><b>Using the laptop alone (no amplifier)?</b> Sound plays from the laptop speakers, or from headphones if plugged in. Use the Test speakers button to check the sound, and wear headphones while testing, because a microphone close to laptop speakers causes screeching.<br><b>Avoid feedback (screeching):</b> keep the microphone away from the speakers and start with the volume low, then raise it slowly. Connect the laptop’s headphone output to the amplifier’s AUX / LINE IN with a cable, and set Windows to use that output.<br><span class="tiny">Bluetooth microphones may sound thinner and add a small delay. For best quality use a wired or USB microphone, or the microphone’s own USB receiver.</span></div>
+</div>
+
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)};
+  var ctx,stream,src,hp,comp,gain,muteG,analyser,recDest,recorder,chunks=[],recTimer,recStart;
+  var micOn=false,onAir=false,muted=false,meterRAF;
+
+  function say(t,err){var m=$('msg');m.textContent=t;m.className='msg'+(err?' err':'')}
+
+  function updateUI(){
+    $('micPill').className='pill'+(micOn?' live':'');$('micTxt').textContent=micOn?'Mic ON · tap to turn off':'Mic OFF · tap to turn on';
+    var ap=$('airPill');
+    if(onAir&&muted){ap.className='pill muted';$('airTxt').textContent='MUTED'}
+    else if(onAir){ap.className='pill live';$('airTxt').textContent='ON AIR · tap to stop'}
+    else{ap.className='pill';$('airTxt').textContent='OFF AIR · tap to go live'}
+    $('btnMute').disabled=!micOn;$('btnRec').disabled=!micOn;
+    $('btnMic').innerHTML=micOn?'<span class="ic">🎤</span>MIC IS ON<small>● Connected: '+devName('inSel')+' · tap to turn off</small>':'<span class="ic">🎤</span>TURN MIC ON<small>○ Not connected · tap to connect</small>';
+    $('btnMic').className='btn '+(micOn?'':'alt');
+    $('btnAir').innerHTML=onAir?'<span class="ic">📡</span>ON AIR · TAP TO STOP<small>● Live → '+devName('outSel')+'</small>':'<span class="ic">📡</span>GO ON AIR<small>○ Not sending · tap to go live</small>';
+    $('btnAir').className='btn'+(onAir?' stop':'');
+    $('btnMute').className='btn mute'+(muted?' on':'');drawFlow();
+    $('btnMute').innerHTML=muted?'<span class="ic">🔊</span>UNMUTE<small>Muted · tap to unmute</small>':'<span class="ic">🔇</span>EMERGENCY MUTE<small>Tap here, or press M or Esc</small>';
+  }
+
+  async function listDevices(){
+    var d=await navigator.mediaDevices.enumerateDevices(),cur=stream&&stream.getAudioTracks()[0].getSettings().deviceId;
+    var i=$('inSel'),o=$('outSel'),i2=$('in2Sel'),cur2=i2.value||wantIn2;i.innerHTML='';i2.innerHTML='<option value="">None (one microphone)</option>';o.innerHTML='<option value="">Default Windows output</option>';
+    d.forEach(function(x){
+      var op=document.createElement('option');op.value=x.deviceId;op.textContent=x.label||(x.kind+' '+x.deviceId.slice(0,6));
+      if(x.kind==='audioinput'){if(x.deviceId===cur)op.selected=true;i.appendChild(op);var o2=op.cloneNode(true);o2.selected=(x.deviceId===cur2);i2.appendChild(o2)}
+      if(x.kind==='audiooutput'&&x.deviceId!=='default'){o.appendChild(op)}
+    });
+  }
+
+  function constraints(id){
+    var ns=$('nsChk').checked;
+    return {audio:{deviceId:id?{exact:id}:undefined,echoCancellation:false,noiseSuppression:ns&&!$('splitChk').checked,autoGainControl:false,channelCount:$('splitChk').checked?2:1}};
+  }
+
+  async function openMic(id){
+    if(stream){stream.getTracks().forEach(function(t){t.stop()})}
+    try{stream=await navigator.mediaDevices.getUserMedia(constraints(id))}catch(e){if(id&&(e.name==='OverconstrainedError'||e.name==='NotFoundError')){stream=await navigator.mediaDevices.getUserMedia(constraints(undefined))}else throw e}
+    if(!ctx){
+      ctx=new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});
+      hp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=90;
+      comp=ctx.createDynamicsCompressor();comp.threshold.value=-24;comp.knee.value=20;comp.ratio.value=4;comp.attack.value=0.005;comp.release.value=0.2;
+      gain=ctx.createGain();muteG=ctx.createGain();analyser=ctx.createAnalyser();analyser.fftSize=2048;
+      recDest=ctx.createMediaStreamDestination();
+      hp.connect(comp);comp.connect(analyser);
+      comp.connect(recDest);            // recording tap (always recorded, never muted by dashboard speaker routing)
+      comp.connect(gain);gain.connect(muteG);
+      setVol();
+    }
+    if(ctx.state==='suspended')await ctx.resume();
+    
+    watchStream(stream,true);await connectSources();
+    micOn=true;await listDevices();if($('in2Sel').value&&!$('splitChk').checked){await connectSources()}meter();
+  }
+
+  function setVol(){var v=$('vol').value/100;$('volTxt').textContent=$('vol').value+'%';if(gain)gain.gain.setTargetAtTime(v,ctx.currentTime,0.02)}
+
+  var fbBuf,fbCount=0,fbLast=-99,fbCool=0,fbT;
+  function showFeedback(hz,v){var b=$('fb');b.innerHTML='<b>⚠ Possible feedback at about '+hz+' Hz.</b> Volume lowered to '+v+'%. Move the microphone away from the speakers.';b.hidden=false;clearTimeout(fbT);fbT=setTimeout(function(){b.hidden=true},10000)}
+  function checkFeedback(){
+    if(!onAir||muted||!$('fbChk').checked){fbCount=0;return}
+    if(!fbBuf)fbBuf=new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(fbBuf);
+    var max=0,idx=0,sum=0,i;
+    for(i=4;i<fbBuf.length;i++){sum+=fbBuf[i];if(fbBuf[i]>max){max=fbBuf[i];idx=i}}
+    var avg=sum/(fbBuf.length-4);
+    if(max>200&&max>avg*6&&Math.abs(idx-fbLast)<=2){fbCount++}else{fbCount=0}
+    fbLast=idx;
+    if(fbCount>60&&Date.now()>fbCool){
+      fbCount=0;fbCool=Date.now()+4000;
+      var v=Math.max(0,Math.round($('vol').value*0.7));$('vol').value=v;setVol();if(mode)modeVol[mode]=v;saveSettings();
+      showFeedback(Math.round(idx*ctx.sampleRate/analyser.fftSize),v);
+    }
+  }
+  var wantIn='',wantOut='';
+  var mode='',modeOut={lap:'',amp:'',usb:''},modeVol={lap:60,amp:70,usb:60};
+  var stream2,src2,sp,g1,g2,an1,an2,mm1=false,mm2=false,wantIn2='',b1;
+  function saveSettings(){try{localStorage.setItem('churchMic',JSON.stringify({vol:$('vol').value,ns:$('nsChk').checked,fb:$('fbChk').checked,inId:wantIn,outId:wantOut,big:document.body.classList.contains('big'),mode:mode,mOut:modeOut,mVol:modeVol,in2:wantIn2,split:$('splitChk').checked,v1:$('v1').value,v2:$('v2').value}))}catch(e){}}
+  function loadSettings(){try{return JSON.parse(localStorage.getItem('churchMic')||'null')}catch(e){return null}}
+  function meter(){
+    cancelAnimationFrame(meterRAF);
+    var buf=new Uint8Array(analyser.fftSize);
+    (function loop(){
+      analyser.getByteTimeDomainData(buf);var pk=0;
+      for(var i=0;i<buf.length;i++){var a=Math.abs(buf[i]-128)/128;if(a>pk)pk=a}
+      $('bar').style.width=Math.min(100,pk*140)+'%';window.__pk=pk;checkFeedback();if(window.__drawMics)window.__drawMics();
+      meterRAF=requestAnimationFrame(loop);
+    })();
+  }
+
+  async function applySink(){
+    var id=$('outSel').value;
+    if(ctx&&ctx.setSinkId){try{await ctx.setSinkId(id||'')}catch(e){say('Could not switch output device: '+e.message,true)}}
+  }
+
+  async function activateMic(){
+    try{
+      say('Requesting microphone…');await openMic($('inSel').value||wantIn||undefined);
+      if(wantOut&&Array.prototype.some.call($('outSel').options,function(o){return o.value===wantOut}))$('outSel').value=wantOut;if(mode&&(mode==='lap'||!modeOut[mode])){var gg=guessOut(mode);if(gg){$('outSel').value=gg;wantOut=gg;modeOut[mode]=gg}}await applySink();updateUI();say('Microphone is ready. Check the level meter, then press Start Preaching.');
+    }catch(e){
+      say(e.name==='NotAllowedError'?'Microphone blocked. Allow microphone access in the browser address bar, then try again. If this page is embedded, open it in its own browser tab.':'Could not open microphone: '+e.message,true);
+    }
+  };
+
+  $('inSel').onchange=async function(){
+    if(!micOn)return;
+    try{await openMic($('inSel').value);say('Microphone changed.')}catch(e){say('Could not switch microphone: '+e.message,true)}
+  };
+  $('outSel').onchange=async function(){await applySink();say('Speaker output changed.')};
+  $('nsChk').onchange=async function(){if(micOn){try{await openMic($('inSel').value)}catch(e){say(e.message,true)}}};
+  $('vol').oninput=setVol;
+
+  $('btnAir').onclick=async function(){
+    if(!micOn){await activateMic();if(!micOn)return}
+    if(!micOn)return;
+    if(ctx.state==='suspended')await ctx.resume();
+    if(!onAir){
+      muteG.gain.cancelScheduledValues(ctx.currentTime);muteG.gain.setValueAtTime(0,ctx.currentTime);muteG.gain.linearRampToValueAtTime(muted?0:1,ctx.currentTime+0.4);muteG.connect(ctx.destination);onAir=true;
+      say('You are live. Speak now. Raise the volume slowly if it is too quiet.');
+    }else{
+      try{muteG.disconnect(ctx.destination)}catch(e){}
+      onAir=false;say('Preaching stopped. Nothing is being sent to the speakers.');
+    }
+    updateUI();
+  };
+
+  function toggleMute(){
+    if(!micOn)return;
+    muted=!muted;muteG.gain.setTargetAtTime(muted?0:1,ctx.currentTime,0.01);
+    say(muted?'MUTED: the speakers are silent.':'Unmuted.');updateUI();
+  }
+  $('btnMute').onclick=toggleMute;
+  document.addEventListener('keydown',function(e){
+    var t=e.target.tagName;if(t==='SELECT'||t==='INPUT')return;
+    if(e.key==='m'||e.key==='M'||e.key==='Escape'){e.preventDefault();toggleMute()}
+  });
+
+  function fmt(s){var m=Math.floor(s/60),x=s%60;return (m<10?'0':'')+m+':'+(x<10?'0':'')+x}
+
+  $('btnRec').onclick=function(){
+    if(recorder&&recorder.state==='recording'){recorder.stop();return}
+    chunks=[];$('dlBox').innerHTML='';
+    var mt=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus'].filter(function(t){return window.MediaRecorder&&MediaRecorder.isTypeSupported(t)})[0];
+    try{recorder=new MediaRecorder(recDest.stream,mt?{mimeType:mt}:{})}catch(e){say('Recording is not supported in this browser.',true);return}
+    recorder.ondataavailable=function(e){if(e.data.size)chunks.push(e.data)};
+    recorder.onstop=function(){
+      clearInterval(recTimer);
+      var blob=new Blob(chunks,{type:recorder.mimeType||'audio/webm'}),url=URL.createObjectURL(blob);
+      var d=new Date(),n='sermon-'+d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)+'.webm';
+      $('dlBox').innerHTML='<a class="dl" href="'+url+'" download="'+n+'">⬇ Download recording ('+n+')</a>';
+      $('recTime').textContent='Recording saved';
+      $('btnRec').innerHTML='⏺ Record Sermon<small>Saves a file you can download</small>';$('btnRec').className='btn alt';
+      say('Recording finished. Download it below.');
+    };
+    recorder.start(1000);recStart=Date.now();
+    recTimer=setInterval(function(){$('recTime').textContent='● Recording '+fmt(Math.floor((Date.now()-recStart)/1000))},500);
+    $('btnRec').innerHTML='⏹ Stop Recording<small>Finish and save</small>';$('btnRec').className='btn stop';
+    say('Recording started.');
+  };
+
+  if(navigator.mediaDevices&&navigator.mediaDevices.addEventListener){
+    navigator.mediaDevices.addEventListener('devicechange',function(){if(micOn)listDevices().then(function(){var s=$('outSel');if(wantOut&&Array.prototype.some.call(s.options,function(o){return o.value===wantOut}))s.value=wantOut;if(window.__chkDev)window.__chkDev()})});
+  }
+  var saved=loadSettings();
+  if(saved){
+    if(saved.vol!=null)$('vol').value=Math.min(100,+saved.vol||80);
+    $('nsChk').checked=saved.ns!==false;$('fbChk').checked=saved.fb!==false;
+    wantIn=saved.inId||'';wantOut=saved.outId||'';
+    if(saved.mOut)for(var k in saved.mOut)modeOut[k]=saved.mOut[k];if(saved.mVol)for(var k2 in saved.mVol)modeVol[k2]=saved.mVol[k2];
+    wantIn2=saved.in2||'';$('splitChk').checked=!!saved.split;if(saved.v1!=null)$('v1').value=saved.v1;if(saved.v2!=null)$('v2').value=saved.v2;if(saved.mode)setMode(saved.mode,true);
+    if(saved.big)document.body.classList.add('big');
+  }
+  setVol();
+  $('inSel').addEventListener('change',function(){wantIn=$('inSel').value;saveSettings()});
+  $('outSel').addEventListener('change',function(){wantOut=$('outSel').value;if(mode)modeOut[mode]=wantOut;saveSettings()});
+  $('nsChk').addEventListener('change',saveSettings);
+  $('fbChk').addEventListener('change',saveSettings);
+  $('vol').addEventListener('change',function(){if(mode)modeVol[mode]=+$('vol').value;saveSettings()});
+  $('btnBig').onclick=function(){document.body.classList.toggle('big');saveSettings()};
+  function deactivateMic(){
+    if(onAir){try{muteG.disconnect(ctx.destination)}catch(e){}onAir=false}
+    if(recorder&&recorder.state==='recording')recorder.stop();
+    disconnectSources();if(stream2){stream2.getTracks().forEach(function(t){t.stop()});stream2=null}
+    if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}
+    cancelAnimationFrame(meterRAF);$('bar').style.width='0%';
+    micOn=false;muted=false;if(muteG)muteG.gain.value=1;
+    say('Microphone is off.');updateUI();
+  }
+  $('btnMic').onclick=function(){if(micOn){deactivateMic()}else{activateMic()}};
+  $('modeLap').onclick=function(){setMode('lap')};
+  $('micPill').onclick=function(){$('btnMic').click()};
+  $('airPill').onclick=function(){$('btnAir').click()};
+  $('modeAmp').onclick=function(){setMode('amp')};
+  $('modeUsb').onclick=function(){setMode('usb')};
+  function applyMics(){
+    var a=$('v1').value/100,b=$('v2').value/100;
+    $('v1Txt').textContent=$('v1').value+'%';$('v2Txt').textContent=$('v2').value+'%';
+    if(g1){g1.gain.setTargetAtTime(mm1?0:a,ctx.currentTime,0.02);g2.gain.setTargetAtTime(mm2?0:b,ctx.currentTime,0.02)}
+    $('m1').textContent=mm1?'Unmute Mic 1':'Mute Mic 1';$('m2').textContent=mm2?'Unmute Mic 2':'Mute Mic 2';
+    $('m1').className='btn '+(mm1?'stop':'alt');$('m2').className='btn '+(mm2?'stop':'alt');
+  }
+  function ensureMicNodes(){
+    if(g1)return;
+    g1=ctx.createGain();g2=ctx.createGain();an1=ctx.createAnalyser();an2=ctx.createAnalyser();an1.fftSize=512;an2.fftSize=512;
+    g1.connect(hp);g2.connect(hp);g1.connect(an1);g2.connect(an2);applyMics();
+  }
+  function disconnectSources(){
+    [src,sp,src2].forEach(function(n){if(n){try{n.disconnect()}catch(e){}}});src=null;sp=null;src2=null;
+  }
+  async function connectSources(){
+    ensureMicNodes();disconnectSources();
+    if(stream2){stream2.getTracks().forEach(function(t){t.stop()});stream2=null}
+    src=ctx.createMediaStreamSource(stream);
+    if($('splitChk').checked){
+      sp=ctx.createChannelSplitter(2);src.connect(sp);sp.connect(g1,0);sp.connect(g2,1);
+      $('in2Sel').disabled=true;
+    }else{
+      $('in2Sel').disabled=false;src.connect(g1);
+      var id2=$('in2Sel').value;
+      if(id2){
+        try{
+          stream2=await navigator.mediaDevices.getUserMedia({audio:{deviceId:{exact:id2},echoCancellation:false,noiseSuppression:$('nsChk').checked,autoGainControl:false,channelCount:1}});
+          src2=ctx.createMediaStreamSource(stream2);src2.connect(g2);watchStream(stream2,false);
+        }catch(e){say('Microphone 2 could not be opened: '+e.message,true)}
+      }
+    }
+  }
+  function drawMics(){
+    if(!an1)return;
+    if(!b1)b1=new Uint8Array(an1.fftSize);
+    [[an1,'bar1'],[an2,'bar2']].forEach(function(p){
+      p[0].getByteTimeDomainData(b1);var pk=0;
+      for(var i=0;i<b1.length;i++){var a=Math.abs(b1[i]-128)/128;if(a>pk)pk=a}
+      $(p[1]).style.width=Math.min(100,pk*140)+'%';
+    });
+  }
+  window.__drawMics=drawMics;
+  $('v1').oninput=applyMics;$('v2').oninput=applyMics;$('v1').onchange=saveSettings;$('v2').onchange=saveSettings;
+  $('m1').onclick=function(){mm1=!mm1;applyMics()};
+  $('m2').onclick=function(){mm2=!mm2;applyMics()};
+  $('in2Sel').onchange=async function(){wantIn2=$('in2Sel').value;saveSettings();if(micOn){try{await connectSources()}catch(e){say(e.message,true)}}};
+  $('splitChk').onchange=async function(){saveSettings();if(micOn){try{await openMic($('inSel').value)}catch(e){say(e.message,true)}}};
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function rawName(id){var s=$(id),o=s&&s.selectedOptions&&s.selectedOptions[0];return o?o.textContent.replace(/^Default - /,''):'default'}
+  function devName(id){return esc(rawName(id))}
+  function drawFlow(){
+    var ML={lap:'Laptop speakers',amp:'Amplifier',usb:'USB hub'};
+    var st={mic:micOn?'on':'',lap:micOn?'on':'',out:onAir?'on':(micOn?'ready':''),spk:onAir?(muted?'mute':'on'):''};
+    ['mic','lap','out','spk'].forEach(function(k){$('fn_'+k).className='fnode '+st[k]});
+    $('fs_mic').textContent=micOn?rawName('inSel'):'Not connected';
+    $('fs_lap').textContent=micOn?'Connected':'Idle';
+    $('fs_out').textContent=(mode?ML[mode]+': ':'')+rawName('outSel');
+    $('fs_spk').textContent=onAir?(muted?'MUTED':'Playing'):'Silent';
+    $('flow').className='flow'+(onAir&&!muted?' live':'');
+  }
+  $('fn_mic').onclick=function(){$('btnMic').click()};
+  $('fn_out').onclick=function(){$('outSel').scrollIntoView({behavior:'smooth',block:'center'});$('outSel').focus()};
+  $('fn_spk').onclick=function(){$('btnTest').click()};
+  ['inSel','outSel'].forEach(function(id){$(id).addEventListener('change',drawFlow)});
+  window.addEventListener('beforeunload',function(e){if(onAir){e.preventDefault();e.returnValue=''}});
+  var LKEY='churchMicPin',memRec=null,fails=0,lockedUntil=0,idleT,lockedNow=false;
+  async function hashPin(p,salt){
+    var data=new TextEncoder().encode(salt+':'+p);
+    if(window.crypto&&crypto.subtle){var h=await crypto.subtle.digest('SHA-256',data);return Array.prototype.map.call(new Uint8Array(h),function(b){return ('0'+b.toString(16)).slice(-2)}).join('')}
+    var x=5381;for(var i=0;i<data.length;i++){x=((x<<5)+x+data[i])|0}return 'f'+x;
+  }
+  function getPinRec(){if(memRec)return memRec;try{return JSON.parse(localStorage.getItem(LKEY)||'null')}catch(e){return null}}
+  function setPinRec(r){memRec=r;try{localStorage.setItem(LKEY,JSON.stringify(r))}catch(e){}}
+  function showLock(){
+    lockedNow=true;var rec=getPinRec();
+    $('lock').hidden=false;document.querySelector('.wrap').inert=true;
+    $('pin').value='';$('pin2').value='';$('pin2').hidden=!!rec;$('pinSkip').hidden=!!rec;
+    $('lockTitle').textContent=rec?'Dashboard locked':'Create a PIN';
+    $('lockSub').textContent=rec?'Enter your PIN to use the dashboard.':'Choose a 4 to 8 digit PIN so only authorised people can use the microphone.';
+    $('pinBtn').textContent=rec?'Unlock':'Save PIN and open';
+    $('lockMute').hidden=!onAir;$('lockMute').textContent=muted?'🔊 UNMUTE':'🔇 EMERGENCY MUTE';
+    $('pinMsg').textContent='';setTimeout(function(){$('pin').focus()},50);
+  }
+  function unlock(){lockedNow=false;$('lock').hidden=true;document.querySelector('.wrap').inert=false;resetIdle()}
+  async function submitPin(){
+    var rec=getPinRec(),p=$('pin').value.trim();
+    if(Date.now()<lockedUntil){$('pinMsg').textContent='Too many attempts. Wait '+Math.ceil((lockedUntil-Date.now())/1000)+' seconds.';return}
+    if(!/^\d{4,8}$/.test(p)){$('pinMsg').textContent='The PIN must be 4 to 8 digits.';return}
+    if(!rec){
+      if(p!==$('pin2').value.trim()){$('pinMsg').textContent='The two PINs do not match.';return}
+      var salt=String(Math.random()).slice(2)+Date.now();setPinRec({salt:salt,h:await hashPin(p,salt)});unlock();return;
+    }
+    if(await hashPin(p,rec.salt)===rec.h){fails=0;unlock()}
+    else{fails++;$('pin').value='';if(fails>=5){lockedUntil=Date.now()+30000;fails=0;$('pinMsg').textContent='Too many wrong PINs. Try again in 30 seconds.'}else{$('pinMsg').textContent='Wrong PIN. '+(5-fails)+' tries left.'}}
+  }
+  function resetIdle(){clearTimeout(idleT);idleT=setTimeout(function(){if(!onAir&&!lockedNow){showLock()}else{resetIdle()}},600000)}
+  ['click','keydown','pointerdown'].forEach(function(ev){document.addEventListener(ev,function(){if(!lockedNow)resetIdle()})});
+  $('pinBtn').onclick=submitPin;
+  $('pinSkip').onclick=unlock;
+  $('pin').addEventListener('keydown',function(e){if(e.key==='Enter'){if(!$('pin2').hidden){$('pin2').focus()}else{submitPin()}}});
+  $('pin2').addEventListener('keydown',function(e){if(e.key==='Enter')submitPin()});
+  $('btnLock').onclick=showLock;
+  var gLogA=[],battery=null,wasCharging=null,sigSilent=0,micMutedT=null,shut=false,shutAlertOn=false,gwT;
+  function gLog(msg){var t=new Date().toLocaleTimeString();gLogA.unshift(t+' – '+msg);gLogA=gLogA.slice(0,6);$('gLog').innerHTML=gLogA.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')}
+  function gSet(k,cls,txt){$('fg_'+k).className='fnode '+cls;$('fgt_'+k).textContent=txt}
+  function showWarn(msg){var b=$('gd');b.innerHTML='<b>🛡 '+esc(msg)+'</b>';b.hidden=false;shutAlertOn=false;clearTimeout(gwT);gwT=setTimeout(function(){b.hidden=true},12000)}
+  function gAlert(msg){var b=$('gd');b.innerHTML='<b>🛡 '+esc(msg)+'</b><br>Only this dashboard was disconnected. The laptop and other devices were not touched. Press Turn Mic ON when the problem is fixed.';b.hidden=false;shutAlertOn=true;clearTimeout(gwT);document.title='⚠ Safe disconnect – Church Microphone'}
+  function safeShutdown(reason){
+    if(shut)return;
+    if(!micOn&&!onAir){gLog(reason);return}
+    shut=true;gLog('Safe disconnect: '+reason);
+    try{if(muteG&&ctx){muteG.gain.cancelScheduledValues(ctx.currentTime);muteG.gain.setTargetAtTime(0,ctx.currentTime,0.03)}}catch(e){}
+    setTimeout(function(){
+      if(recorder&&recorder.state==='recording'){try{recorder.stop()}catch(e){}}
+      deactivateMic();gAlert('Safe disconnect: '+reason+'.');shut=false;
+    },250);
+  }
+  function watchStream(s,main){
+    if(ctx&&!ctx.__w){ctx.__w=1;ctx.onstatechange=function(){
+      gLog('Audio engine: '+ctx.state);
+      if(ctx.state==='suspended'&&onAir&&$('gdChk').checked){ctx.resume().catch(function(){});showWarn('The audio engine paused. Trying to restart it.')}
+      if(ctx.state==='closed'&&$('gdChk').checked)safeShutdown('the audio engine stopped');
+    }}
+    s.getAudioTracks().forEach(function(t){
+      t.addEventListener('ended',function(){
+        if(!$('gdChk').checked||(s!==stream&&s!==stream2))return;
+        if(main){gLog('Microphone 1 lost');safeShutdown('the microphone was disconnected or lost power')}
+        else{gLog('Microphone 2 lost');showWarn('Microphone 2 was disconnected and has been muted.');mm2=true;applyMics()}
+      });
+      if(main){t.addEventListener('mute',function(){micMutedT=Date.now()});t.addEventListener('unmute',function(){micMutedT=null})}
+    });
+    if(main)micMutedT=null;
+  }
+  window.__chkDev=function(){
+    if(!$('gdChk').checked)return;
+    var s=$('outSel');
+    if(wantOut&&!Array.prototype.some.call(s.options,function(o){return o.value===wantOut})){gLog('Output device removed');safeShutdown('the selected speaker or amplifier output was disconnected')}
+  };
+  function onPower(init){
+    if(!battery)return;
+    var pct=Math.round(battery.level*100),chg=battery.charging;
+    gSet('pow',chg?'on':'ready',chg?'Mains OK · battery '+pct+'%':'On battery '+pct+'% (mains off)');
+    if(init===true){wasCharging=chg;return}
+    if(wasCharging&&!chg){
+      gLog('Mains power lost (battery '+pct+'%)');
+      if($('gdChk').checked){
+        var a=$('gdPower').value;
+        if(a==='now')safeShutdown('mains power failed');
+        else if(a==='low'&&pct<=15)safeShutdown('mains power failed and the battery is low');
+        else showWarn('Mains power lost. Running on battery ('+pct+'%).');
+      }
+    }else if(!wasCharging&&chg){gLog('Mains power restored');showWarn('Mains power is back. Press Turn Mic ON when you are ready.')}
+    if(!chg&&$('gdChk').checked){
+      if(pct<=10)safeShutdown('the battery is critically low ('+pct+'%)');
+      else if(pct<=15&&$('gdPower').value==='low')safeShutdown('the battery is low ('+pct+'%) after the power failure');
+    }
+    wasCharging=chg;
+  }
+  if(navigator.getBattery){
+    navigator.getBattery().then(function(b){battery=b;b.addEventListener('chargingchange',onPower);b.addEventListener('levelchange',onPower);onPower(true)}).catch(function(){gSet('pow','','Not available')});
+  }else{gSet('pow','','Not supported in this browser')}
+  $('gTest').onclick=function(){if(!micOn){showWarn('Turn the microphone on first, then test the safe disconnect.');return}safeShutdown('manual test')};
+  $('gdChk').onchange=function(){gLog($('gdChk').checked?'Guardian turned on':'Guardian turned off')};
+  var onAirSecs=0,bleLevel=null,battWarn=100,BKEY='churchMicBatt';
+  try{var bs=JSON.parse(localStorage.getItem(BKEY)||'null');if(bs){onAirSecs=bs.secs||0;$('runH').value=bs.run||8;$('chgChk').checked=!!bs.chg}}catch(e){}
+  function battSave(){try{localStorage.setItem(BKEY,JSON.stringify({secs:onAirSecs,run:$('runH').value,chg:$('chgChk').checked}))}catch(e){}}
+  function battPct(){
+    if($('chgChk').checked)return null;
+    if(bleLevel!=null)return bleLevel;
+    var h=+$('runH').value||8;return Math.max(0,Math.round((1-onAirSecs/3600/h)*100));
+  }
+  function battDraw(){
+    var p=battPct(),cls,title,txt;
+    if($('chgChk').checked){cls='on';title='Charging while in use';txt=onAir?'Charger connected: the battery keeps charging while you speak':'Charger connected'}
+    else{
+      cls=p<=10?'mute':p<=25?'ready':'on';
+      title=bleLevel!=null?'Battery '+p+'%':'About '+p+'% left';
+      if(bleLevel!=null){txt='Read from the microphone'}
+      else{var h=+$('runH').value||8,left=Math.max(0,h*(1-onAirSecs/3600/h)),hh=Math.floor(left),mm=Math.round((left-hh)*60);txt='Estimate: about '+hh+' h '+mm+' min of use left'}
+    }
+    $('battS').className='fnode '+cls;$('battT').textContent=title;$('battX').textContent=txt;
+  }
+  $('chgChk').onchange=function(){battWarn=100;battSave();battDraw();gLog($('chgChk').checked?'Microphone charger connected':'Microphone charger disconnected')};
+  $('runH').onchange=function(){battWarn=100;battSave();battDraw()};
+  $('btnBFull').onclick=function(){onAirSecs=0;bleLevel=null;battWarn=100;battSave();battDraw();gLog('Battery marked as full')};
+  $('btnDoc').onclick=async function(){
+    var ok=[],bad=[],fix=[],out=$('docOut');
+    out.innerHTML='<li>Checking… please speak into the microphone.</li>';
+    function wait(ms){return new Promise(function(r){setTimeout(r,ms)})}
+    if(!micOn){await activateMic()}
+    if(!micOn){bad.push('The microphone could not be turned on. Allow microphone access (padlock next to the address) and check the microphone is paired and switched on.')}
+    else{
+      ok.push('Microphone is on: '+rawName('inSel'));
+      if(ctx.state!=='running'){try{await ctx.resume();fix.push('Restarted the paused audio engine.')}catch(e){bad.push('The audio engine could not start. Reload the page.')}}
+      var tr=stream&&stream.getAudioTracks()[0];
+      if(tr&&(!tr.enabled||tr.readyState!=='live'))bad.push('The microphone connection is not live. Turn the mic off and on again, or pick another microphone.');
+      if(tr&&tr.muted)bad.push('The microphone is blocked or muted. Check Windows Settings > Privacy > Microphone, and that the microphone itself is switched on and not muted.');
+      if(!onAir){$('btnAir').click();await wait(600);fix.push('Pressed Go ON AIR. Nothing is sent to the speakers until you are on air.')}
+      if(muted){toggleMute();fix.push('Removed the mute.')}
+      if(+$('vol').value<30){$('vol').value=Math.min(60,+$('vol').max);setVol();if(mode)modeVol[mode]=+$('vol').value;saveSettings();fix.push('The speaker volume was very low. Raised it to '+$('vol').value+'%.')}
+      if(wantOut&&!Array.prototype.some.call($('outSel').options,function(o){return o.value===wantOut})){$('outSel').value='';wantOut='';await applySink();fix.push('The chosen output was not found, so the Windows default output is now used.')}
+      await wait(1500);
+      if((window.__pk||0)===0)bad.push('No sound is reaching the dashboard from the microphone. Speak or tap it, check its battery and receiver, or choose another microphone in the list. Bluetooth microphones may also switch Windows to a poor-quality mode.');
+      else ok.push('The microphone is picking up sound.');
+      if(onAir&&!muted&&(window.__pk||0)>0)ok.push('Your voice is being sent to: '+rawName('outSel')+'. If you still hear nothing, press Test speakers. No tone means the wrong output is chosen, so pick the speakers in the Speakers list and check the Windows volume.');
+    }
+    out.innerHTML=ok.map(function(t){return '<li>✅ '+esc(t)+'</li>'}).concat(fix.map(function(t){return '<li>🔧 '+esc(t)+'</li>'}),bad.map(function(t){return '<li>❌ '+esc(t)+'</li>'})).join('');
+    updateUI();
+  };
+  $('btnBle').onclick=async function(){
+    if(!navigator.bluetooth){showWarn('Reading the battery by Bluetooth needs Chrome or Edge.');return}
+    try{
+      var d=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:['battery_service']});
+      var srv=await d.gatt.connect(),svc=await srv.getPrimaryService('battery_service'),ch=await svc.getCharacteristic('battery_level');
+      var v=await ch.readValue();bleLevel=v.getUint8(0);
+      try{await ch.startNotifications();ch.addEventListener('characteristicvaluechanged',function(e){bleLevel=e.target.value.getUint8(0);battDraw()})}catch(e){}
+      battDraw();gLog('Microphone battery read: '+bleLevel+'%');
+    }catch(e){showWarn('Could not read the battery. This microphone may not share its battery level, so the hours estimate is used.')}
+  };
+  setInterval(function(){
+    if(onAir&&!$('chgChk').checked&&bleLevel==null){onAirSecs++;if(onAirSecs%30===0)battSave()}
+    battDraw();
+    var p=battPct();
+    if(p==null||p>25){battWarn=100;return}
+    if(onAir){
+      if(p<=10&&battWarn>10){battWarn=10;gLog('Microphone battery very low (about '+p+'%)');showWarn('The microphone battery is very low (about '+p+'%). Change it or connect the charger now.')}
+      else if(p<=20&&battWarn>20){battWarn=20;gLog('Microphone battery getting low (about '+p+'%)');showWarn('The microphone battery is getting low (about '+p+'%).')}
+    }
+  },1000);
+  battDraw();
+  setInterval(function(){
+    if(shutAlertOn&&micOn){$('gd').hidden=true;shutAlertOn=false;document.title='Church Microphone Dashboard'}
+    if(micOn){gSet('mic','on',rawName('inSel'));gSet('out',onAir?'on':'ready',rawName('outSel'))}else{gSet('mic','','Off');gSet('out','','Idle')}
+    if(micOn&&onAir&&!muted){
+      if((window.__pk||0)===0){sigSilent++}else{sigSilent=0}
+      if(sigSilent>=10){gSet('sig','mute','No sound detected');if(sigSilent===10&&$('gdChk').checked){gLog('No sound from the microphone for 10 seconds');showWarn('No sound is coming from the microphone. Check its battery and the receiver.')}}
+      else{gSet('sig','on','Sound OK')}
+    }else{sigSilent=0;gSet('sig','','Waiting')}
+    if($('gdChk').checked&&micOn&&onAir&&micMutedT&&Date.now()-micMutedT>3000)safeShutdown('the microphone stopped sending sound');
+  },1000);
+  $('lockMute').onclick=function(){toggleMute();$('lockMute').textContent=muted?'🔊 UNMUTE':'🔇 EMERGENCY MUTE'};
+  showLock();
+  applyMics();
+  function guessOut(m){
+    var no=/bluetooth|hands-free|headset/i,tiers=m==='lap'?[/speaker.*realtek/i,/^(?!.*(headphone|headset|line|aux|mic|digital|hdmi)).*realtek/i,/speaker/i]:m==='usb'?[/usb/i]:[/headphone|line|aux|jack/i],r='',opts=Array.prototype.slice.call($('outSel').options);tiers.some(function(re){return opts.some(function(o){if(o.value&&re.test(o.textContent)&&!no.test(o.textContent)){r=o.value;return true}return false})});
+    
+    return r;
+  }
+  function setMode(m,quiet){
+    mode=m;var s=$('outSel'),want=(m==='lap'?guessOut(m):'')||modeOut[m]||guessOut(m)||'';
+    var ok=!want||Array.prototype.some.call(s.options,function(o){return o.value===want});
+    s.value=ok?want:'';wantOut=want;
+    $('vol').max=m==='lap'?60:150;$('vol').value=Math.min(m==='lap'?60:100,modeVol[m]);setVol();
+    if(m==='lap')$('fbChk').checked=true;
+    applySink();
+    $('modeLap').className='btn alt'+(m==='lap'?' sel':'');$('modeAmp').className='btn alt'+(m==='amp'?' sel':'');$('modeUsb').className='btn alt'+(m==='usb'?' sel':'');drawFlow();
+    $('modeTxt').textContent=m==='lap'?'Laptop speaker mode (Realtek speakers): volume is limited to 60% and the feedback guard is on. Use headphones when testing.':m==='usb'?'USB mode: the receiver is plugged into the laptop and the USB sound card or hub feeds the amplifier. Choose the receiver in Microphone 1 and the USB device in Speakers.':'Amplifier mode: plug the cable into AUX / LINE IN. If you hear nothing, pick the headphone or line-out in the Speakers list.';
+    if(!quiet){say(m==='lap'?'Sound will play from the laptop speakers.':m==='usb'?'Sound will go through the USB hub or sound card to the amplifier.':'Sound will go to the amplifier.');saveSettings()}
+  }
+  $('btnTest').onclick=async function(){
+    try{
+      var tc=new (window.AudioContext||window.webkitAudioContext)();
+      if(tc.setSinkId&&$('outSel').value){try{await tc.setSinkId($('outSel').value)}catch(e){}}
+      var o=tc.createOscillator(),g=tc.createGain(),lvl=0.25*($('vol').value/100);
+      o.frequency.value=440;g.gain.setValueAtTime(0,tc.currentTime);g.gain.linearRampToValueAtTime(lvl,tc.currentTime+0.05);g.gain.linearRampToValueAtTime(0,tc.currentTime+1);
+      o.connect(g);g.connect(tc.destination);o.start();o.stop(tc.currentTime+1.05);
+      o.onended=function(){tc.close()};say('Playing a test tone. If you hear it, the speakers are working.');
+    }catch(e){say('Could not play the test tone: '+e.message,true)}
+  };
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){say('This browser cannot access the microphone. Use Chrome or Edge on Windows.',true);$('btnMic').disabled=true}
+  updateUI();
+})();
+</script>
+</body>
+</html>
